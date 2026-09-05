@@ -18,6 +18,9 @@
     "source.php:root-scope-used",
     "text.html.php:root-scope-used"
   ],
+  "scripts": {
+    "test": "pulsar --test spec"
+  },
   "repository": "https://github.com/savetheclocktower/pulsar-ide-php",
   "license": "MIT",
   "engines": {
