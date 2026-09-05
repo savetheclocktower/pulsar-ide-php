@@ -1,0 +1,779 @@
+{
+  "name": "pulsar-ide-php",
+  "main": "./lib/main",
+  "version": "0.0.0",
+  "description": "PHP language support for Pulsar using Intelephense",
+  "keywords": [
+    "intelephense",
+    "php",
+    "ide",
+    "lsp"
+  ],
+  "activationCommands": {
+    "atom-workspace": [
+      "pulsar-ide-php:start-language-server"
+    ]
+  },
+  "activationHooks": [
+    "source.php:root-scope-used",
+    "text.html.php:root-scope-used"
+  ],
+  "repository": "https://github.com/savetheclocktower/pulsar-ide-php",
+  "license": "MIT",
+  "engines": {
+    "atom": " >=1.131.0 <2.0.0"
+  },
+  "dependencies": {
+    "@savetheclocktower/atom-languageclient": "^1.18.0",
+    "intelephense": "^1.18.5"
+  },
+  "configSchema": {
+    "intelephense": {
+      "type": "object",
+      "order": 1,
+      "title": "Intelephense",
+      "description": "Settings for the Intelephense Language Server. If you have defined [an `intelephense.config.json` file](https://intelephense.com/docs#configuration) in the root of your project, **those settings are combined with these and take precedence** — the config file will **override** any settings specified here. Thus if any of these settings need to vary from project to project, it is better to put those into an `intelephense.config.json` file.",
+      "properties": {
+        "licenseKey": {
+          "type": "string",
+          "order": 1,
+          "title": "License Key",
+          "description": "The license key to use to unlock premium Intelephense features. Can be omitted at the cost of a reduced feature set."
+        },
+        "environment": {
+          "type": "object",
+          "order": 2,
+          "title": "Environment",
+          "properties": {
+            "phpVersion": {
+              "order": 1,
+              "type": "string",
+              "default": "8.5.0",
+              "title": "PHP Version",
+              "description": "A semver-compatible string representing the version of PHP you are targeting. Used to tailor suggestions and diagnostics. PHP 5.3.0 and later are supported."
+            },
+            "documentRoot": {
+              "order": 2,
+              "type": "string",
+              "default": "",
+              "title": "Document Root",
+              "description": "The directory containing your application’s entry point (the directory that holds `index.php`). May be absolute or relative to the project root. Used when resolving script inclusion and path suggestions."
+            },
+            "includePaths": {
+              "order": 3,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "title": "Include Paths",
+              "description": "A comma-separated list of paths, as defined in the `include_path` INI setting, or paths to external libraries. Each may be absolute or relative to the project root."
+            },
+            "shortOpenTag": {
+              "order": 4,
+              "type": "boolean",
+              "default": true,
+              "title": "Short Open Tag",
+              "description": "When enabled, `<?` will be parsed as a PHP open tag."
+            }
+          }
+        },
+        "files": {
+          "type": "object",
+          "order": 3,
+          "title": "Files",
+          "properties": {
+            "associations": {
+              "order": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "*.php",
+                "*.phtml"
+              ],
+              "title": "Associations",
+              "description": "A comma-separated list of glob patterns describing which files should be made available to language server features."
+            },
+            "exclude": {
+              "order": 2,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "**/node_modules/**",
+                "**/bower_components/**",
+                "**/vendor/**/{Tests,tests}/**",
+                "**/vendor/**/vendor/**"
+              ],
+              "title": "Additional Excluded Paths",
+              "description": "A comma-separated list of glob patterns describing files and folders that should be excluded from all language server features.\n\nThese are added to whatever you have configured in Pulsar’s own **Ignored Names** setting (`core.ignoredNames`), so there is no need to repeat those entries here."
+            },
+            "maxSize": {
+              "order": 3,
+              "type": "number",
+              "default": 1000000,
+              "title": "Maximum File Size",
+              "description": "The largest file size, in bytes, that the language server will index. Larger files are ignored."
+            }
+          }
+        },
+        "completion": {
+          "type": "object",
+          "order": 4,
+          "title": "Completion",
+          "description": "Settings that affect the suggestions returned by the language server. See also the **Autocomplete** section below.",
+          "properties": {
+            "insertUseDeclaration": {
+              "order": 1,
+              "type": "boolean",
+              "default": true,
+              "title": "Insert Use Declaration",
+              "description": "When enabled, accepting a suggestion for a namespaced class, trait, interface, function, or constant will automatically insert a `use` declaration for it."
+            },
+            "fullyQualifyGlobalConstantsAndFunctions": {
+              "order": 2,
+              "type": "boolean",
+              "default": false,
+              "title": "Fully Qualify Global Constants and Functions",
+              "description": "When enabled, constants and functions in the global namespace will be fully qualified (prefixed with a backslash) when inserted."
+            },
+            "triggerParameterHints": {
+              "order": 3,
+              "type": "boolean",
+              "default": true,
+              "title": "Trigger Parameter Hints",
+              "description": "When enabled, method and function suggestions will include parentheses and will trigger signature help."
+            },
+            "suggestObjectOperatorStaticMethods": {
+              "order": 4,
+              "type": "boolean",
+              "default": true,
+              "title": "Suggest Static Methods After Object Operator",
+              "description": "PHP allows static methods to be called with the object operator — e.g. `$obj->myStaticMethod()`. Disable this if you’d rather not be offered static methods in that context."
+            },
+            "withMethodBody": {
+              "order": 5,
+              "type": "boolean",
+              "default": true,
+              "title": "Complete Methods With a Body",
+              "description": "When enabled, method suggestions will include either a `parent` call or a `throw new Exception('Not implemented')` in the method body."
+            },
+            "withOverrideAttribute": {
+              "order": 6,
+              "type": "boolean",
+              "default": true,
+              "title": "Complete Methods With an Override Attribute",
+              "description": "When enabled, method suggestions will include an `#[Override]` attribute where appropriate — but only when targeting PHP 8.3 or later."
+            },
+            "maxItems": {
+              "order": 7,
+              "type": "number",
+              "default": 100,
+              "title": "Maximum Items",
+              "description": "The maximum number of suggestions returned for a single request."
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "object",
+          "order": 5,
+          "collapsed": true,
+          "title": "Diagnostics",
+          "description": "Settings that control which diagnostics the language server produces. See also the **Linter** section below, which controls how those diagnostics are presented.",
+          "properties": {
+            "run": {
+              "order": 1,
+              "type": "string",
+              "default": "onType",
+              "enum": [
+                {
+                  "value": "onType",
+                  "description": "As you type"
+                },
+                {
+                  "value": "onSave",
+                  "description": "When you save the buffer"
+                }
+              ],
+              "title": "Run Diagnostics",
+              "description": "When the language server should analyze a buffer for problems."
+            },
+            "embeddedLanguages": {
+              "order": 2,
+              "type": "boolean",
+              "default": true,
+              "title": "Embedded Languages",
+              "description": "Whether to report diagnostics for HTML, CSS, and JavaScript embedded within PHP files."
+            },
+            "undefinedVariables": {
+              "order": 3,
+              "type": "string",
+              "default": "on",
+              "enum": [
+                {
+                  "value": "on",
+                  "description": "On"
+                },
+                {
+                  "value": "local",
+                  "description": "Only variables local to the current scope"
+                },
+                {
+                  "value": "off",
+                  "description": "Off"
+                }
+              ],
+              "title": "Undefined Variables",
+              "description": "Whether to report references to undefined variables."
+            },
+            "undefinedTypes": {
+              "order": 4,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Types",
+              "description": "Whether to report references to undefined classes, interfaces, and traits."
+            },
+            "undefinedFunctions": {
+              "order": 5,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Functions",
+              "description": "Whether to report references to undefined functions."
+            },
+            "undefinedConstants": {
+              "order": 6,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Constants",
+              "description": "Whether to report references to undefined constants."
+            },
+            "undefinedClassConstants": {
+              "order": 7,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Class Constants",
+              "description": "Whether to report references to undefined class constants."
+            },
+            "undefinedMethods": {
+              "order": 8,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Methods",
+              "description": "Whether to report references to undefined methods."
+            },
+            "undefinedProperties": {
+              "order": 9,
+              "type": "boolean",
+              "default": true,
+              "title": "Undefined Properties",
+              "description": "Whether to report references to undefined properties."
+            },
+            "suppressUndefinedMembersWhenMagicMethodDeclared": {
+              "order": 10,
+              "type": "boolean",
+              "default": true,
+              "title": "Suppress Undefined Members When Magic Method Declared",
+              "description": "When enabled, undefined property and method diagnostics are suppressed on classes that declare a `__get` or `__call` magic method."
+            },
+            "unusedSymbols": {
+              "order": 11,
+              "type": "boolean",
+              "default": true,
+              "title": "Unused Symbols",
+              "description": "Whether to report unused variables, unused private members, and unused imports."
+            },
+            "duplicateSymbols": {
+              "order": 12,
+              "type": "boolean",
+              "default": true,
+              "title": "Duplicate Symbols",
+              "description": "Whether to report symbols that are declared more than once."
+            },
+            "unexpectedTokens": {
+              "order": 13,
+              "type": "boolean",
+              "default": true,
+              "title": "Unexpected Tokens",
+              "description": "Whether to report syntax errors."
+            },
+            "argumentCount": {
+              "order": 14,
+              "type": "string",
+              "default": "on",
+              "enum": [
+                {
+                  "value": "on",
+                  "description": "On"
+                },
+                {
+                  "value": "declared",
+                  "description": "Only for functions and methods declared in your project"
+                },
+                {
+                  "value": "off",
+                  "description": "Off"
+                }
+              ],
+              "title": "Argument Count",
+              "description": "Whether to report calls made with the wrong number of arguments."
+            },
+            "typeErrors": {
+              "order": 15,
+              "type": "boolean",
+              "default": true,
+              "title": "Type Errors",
+              "description": "Whether to report type incompatibilities in arguments, property assignments, and return statements where types have been declared."
+            },
+            "memberAccess": {
+              "order": 16,
+              "type": "boolean",
+              "default": true,
+              "title": "Member Access",
+              "description": "Whether to report errors associated with accessing members of a type — for instance, reading a `private` property from outside its class."
+            },
+            "implementationErrors": {
+              "order": 17,
+              "type": "boolean",
+              "default": true,
+              "title": "Implementation Errors",
+              "description": "Whether to report problems with method and class implementations, such as unimplemented abstract methods or incompatible method signatures."
+            },
+            "languageConstraints": {
+              "order": 18,
+              "type": "boolean",
+              "default": true,
+              "title": "Language Constraints",
+              "description": "Whether to report violations of various language-level constraints."
+            },
+            "deprecated": {
+              "order": 19,
+              "type": "boolean",
+              "default": true,
+              "title": "Deprecated",
+              "description": "Whether to report usage of symbols marked as deprecated."
+            },
+            "unreachableCode": {
+              "order": 20,
+              "type": "boolean",
+              "default": true,
+              "title": "Unreachable Code",
+              "description": "Whether to report code that can never be executed."
+            },
+            "suspectCode": {
+              "order": 21,
+              "type": "boolean",
+              "default": true,
+              "title": "Suspect Code",
+              "description": "Whether to report irregularities that may indicate a bug — for instance, an assignment within a conditional expression, or a duplicate array key."
+            },
+            "relaxedTypeCheck": {
+              "order": 22,
+              "type": "boolean",
+              "default": true,
+              "title": "Relaxed Type Check",
+              "description": "When enabled, a contravariant (wider) type will satisfy a type constraint. This makes type checking less thorough, which is useful in projects with incomplete or inaccurate type information. Disable it for stricter checking."
+            },
+            "noMixedTypeCheck": {
+              "order": 23,
+              "type": "boolean",
+              "default": true,
+              "title": "No Mixed Type Check",
+              "description": "When enabled, type checking is skipped for the `mixed` type. Disable it to make type checking more thorough by requiring `mixed` to satisfy a type constraint explicitly."
+            },
+            "strictTypes": {
+              "order": 24,
+              "type": "boolean",
+              "default": false,
+              "title": "Strict Types",
+              "description": "When enabled, type checks are performed as though every file declared `declare(strict_types=1)`."
+            }
+          }
+        },
+        "format": {
+          "type": "object",
+          "order": 6,
+          "title": "Formatting",
+          "description": "Settings that affect how the language server formats code. See also the **Code Formatting** section below.",
+          "properties": {
+            "braces": {
+              "order": 1,
+              "type": "string",
+              "default": "per",
+              "enum": [
+                {
+                  "value": "per",
+                  "description": "PER Coding Style"
+                },
+                {
+                  "value": "allman",
+                  "description": "Allman"
+                },
+                {
+                  "value": "k&r",
+                  "description": "K&R"
+                }
+              ],
+              "title": "Brace Style",
+              "description": "The brace placement style to use when formatting."
+            }
+          }
+        },
+        "references": {
+          "type": "object",
+          "order": 7,
+          "title": "References",
+          "properties": {
+            "exclude": {
+              "order": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "**/vendor/**"
+              ],
+              "title": "Exclude",
+              "description": "A comma-separated list of glob patterns describing files and folders that should be excluded when searching for references."
+            }
+          }
+        },
+        "rename": {
+          "type": "object",
+          "order": 8,
+          "title": "Rename",
+          "properties": {
+            "exclude": {
+              "order": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [
+                "**/vendor/**"
+              ],
+              "title": "Exclude",
+              "description": "A comma-separated list of glob patterns describing files and folders that should be excluded when renaming a symbol. A rename will fail if the symbol’s definition lives in an excluded file."
+            },
+            "namespaceMode": {
+              "order": 2,
+              "type": "string",
+              "default": "single",
+              "enum": [
+                {
+                  "value": "single",
+                  "description": "Rename only the selected segment"
+                },
+                {
+                  "value": "all",
+                  "description": "Rename the entire namespace"
+                }
+              ],
+              "title": "Namespace Mode",
+              "description": "How much of a namespace to affect when renaming part of one."
+            }
+          }
+        },
+        "phpdoc": {
+          "type": "object",
+          "order": 9,
+          "title": "PHPDoc",
+          "description": "Settings that affect the PHPDoc blocks generated by the **Add PHPDoc** code action.",
+          "properties": {
+            "returnVoid": {
+              "order": 1,
+              "type": "boolean",
+              "default": true,
+              "title": "Return Void",
+              "description": "Whether to add `@return void` to generated PHPDoc for definitions that do not return a value."
+            },
+            "useFullyQualifiedNames": {
+              "order": 2,
+              "type": "boolean",
+              "default": false,
+              "title": "Use Fully Qualified Names",
+              "description": "When enabled, types in generated PHPDoc will be fully qualified. When disabled, short names will be used and imported where appropriate. Overrides **Insert Use Declaration** above."
+            }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "order": 10,
+          "title": "Telemetry",
+          "properties": {
+            "enabled": {
+              "order": 1,
+              "type": "boolean",
+              "default": false,
+              "title": "Enabled",
+              "description": "When enabled, anonymous usage and crash data will be sent to Intelephense’s vendor via Azure Application Insights."
+            }
+          }
+        }
+      }
+    },
+    "autocomplete": {
+      "type": "object",
+      "order": 2,
+      "title": "Autocomplete",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "When checked, will act as an `autocomplete-plus` provider and suggest completions for things you type.",
+          "order": 1
+        }
+      }
+    },
+    "codeFormat": {
+      "type": "object",
+      "order": 3,
+      "title": "Code Formatting",
+      "properties": {
+        "enable": {
+          "order": 0,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "Whether to enable automatic code formatting. When disabled, this package will not act as a code formatting provider under any circumstances. When enabled, you must still have a package such as `pulsar-code-format` to implement code formatting and to control whether it is applied on save, while you type, or only when you ask for it.\n\n(Takes effect after a window reload or a restart of Pulsar.)"
+        },
+        "priority": {
+          "order": 1,
+          "title": "Priority",
+          "default": 1,
+          "type": "number",
+          "description": "The priority of this code formatting provider. Consumer packages use priority to decide which provider should “win” if several are available for a given task."
+        }
+      }
+    },
+    "linter": {
+      "type": "object",
+      "order": 4,
+      "title": "Linter",
+      "description": "Settings that control how diagnostics are presented. To control which diagnostics are produced in the first place, see **Intelephense → Diagnostics** above.",
+      "properties": {
+        "enable": {
+          "order": 1,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "Whether to show diagnostic messages via the `linter` package. (To change this setting for a specific kind of file, use a scoped setting.)"
+        },
+        "includeMessageCodeInMessageBody": {
+          "order": 2,
+          "type": "boolean",
+          "default": false,
+          "title": "Include Message Code in Message Body",
+          "description": "When enabled, will include the code for a linter message at the end of its body. Intelephense’s codes look like `P1009`."
+        }
+      }
+    },
+    "symbols": {
+      "type": "object",
+      "order": 5,
+      "title": "Symbols",
+      "description": "Configures how this package talks to the `symbols-view` package — the core package that lets you jump to specific methods, classes, and other symbols, either in the current file or project-wide.\n\nDepending on what other Pulsar packages you have installed, another package might get picked to provide symbols over this one; you can tweak this behavior via the **Prefer Certain Providers** setting in the `symbols-view` package settings.",
+      "properties": {
+        "enable": {
+          "order": 1,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "Whether to provide symbols for the current file, for project-wide symbol search, and for going to the definition of a symbol. (To change this setting for a specific kind of file, use a scoped setting.)"
+        },
+        "enableForFileSymbols": {
+          "order": 2,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable For File Symbols",
+          "description": "Whether to act as a provider for file symbols. Has no effect unless **Enable** is also checked."
+        },
+        "enableForProjectSymbols": {
+          "order": 3,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable For Project Symbols",
+          "description": "Whether to act as a provider for project symbols. Affects the `symbols-view` commands **Toggle Project Symbols** and **Go To Declaration**. Has no effect unless **Enable** is also checked."
+        },
+        "ignoredTags": {
+          "order": 4,
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "title": "Ignored Tags",
+          "description": "A comma-separated list of tags that should be ignored when displaying a list of symbols (such as for the **Symbols View: Toggle File Symbols** command).\n\nA symbol’s tag is the text in the rightmost badge for its entry in the symbols list — but lowercase. For example: to ignore variables, add `variable` to this list."
+        },
+        "minimumQueryLength": {
+          "order": 5,
+          "type": "number",
+          "default": 3,
+          "title": "Minimum Query Length",
+          "description": "The minimum number of characters a user must type on a **project-wide symbol search** before the request is forwarded to the language server."
+        }
+      }
+    },
+    "hover": {
+      "type": "object",
+      "order": 6,
+      "title": "Hover Information",
+      "properties": {
+        "enable": {
+          "order": 1,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "Whether to act as a hover information provider via the `datatip` and `hover` services. Hover information offers useful context for tokens under the cursor or mouse pointer. (Takes effect after a window reload or a restart of Pulsar.)"
+        },
+        "priority": {
+          "order": 2,
+          "type": "number",
+          "default": 1,
+          "title": "Priority",
+          "description": "The priority of this hover information provider. Consumer packages use priority to decide which provider should “win” if several are available for a given task."
+        }
+      }
+    },
+    "signatureHelp": {
+      "type": "object",
+      "order": 7,
+      "title": "Signature Help",
+      "properties": {
+        "enable": {
+          "order": 1,
+          "type": "boolean",
+          "default": true,
+          "title": "Enable",
+          "description": "Whether to act as a signature help provider. Signature help describes the parameters of the function or method whose argument list you are currently editing. (Takes effect after a window reload or a restart of Pulsar.)"
+        },
+        "priority": {
+          "order": 2,
+          "type": "number",
+          "default": 1,
+          "title": "Priority",
+          "description": "The priority of this signature help provider. Consumer packages use priority to decide which provider should “win” if several are available for a given task."
+        }
+      }
+    },
+    "advanced": {
+      "type": "object",
+      "order": 8,
+      "collapsed": true,
+      "title": "Advanced",
+      "properties": {
+        "memoryLimit": {
+          "order": 1,
+          "type": "number",
+          "default": 0,
+          "title": "Memory Limit",
+          "description": "The maximum size of V8’s old memory section in megabytes, corresponding to `--max-old-space-size` on the command line. For example: a value of `4096` means 4 gigabytes. A value of `0` is equivalent to not specifying this option. Raise this if the language server runs out of memory on a large project.\n\n(Takes effect the next time the language server starts.)"
+        }
+      }
+    }
+  },
+  "consumedServices": {
+    "linter-indie": {
+      "versions": {
+        "2.0.0": "consumeLinterV2"
+      }
+    },
+    "datatip": {
+      "versions": {
+        "0.1.0": "consumeDatatip"
+      }
+    },
+    "signature-help": {
+      "versions": {
+        "0.1.0": "consumeSignatureHelp"
+      }
+    },
+    "atom-ide-busy-signal": {
+      "versions": {
+        "0.1.0": "consumeBusySignal"
+      }
+    }
+  },
+  "providedServices": {
+    "intentions:list": {
+      "versions": {
+        "1.0.0": "provideIntentionsList"
+      }
+    },
+    "symbol.provider": {
+      "description": "Allows external sources to suggest symbols for a given file or project.",
+      "versions": {
+        "1.0.0": "provideSymbols"
+      }
+    },
+    "autocomplete.provider": {
+      "versions": {
+        "5.1.0": "provideAutocomplete"
+      }
+    },
+    "code-actions": {
+      "versions": {
+        "0.1.0": "provideCodeActions"
+      }
+    },
+    "code-format.range": {
+      "versions": {
+        "0.1.0": "provideRangeCodeFormat"
+      }
+    },
+    "code-format.onType": {
+      "versions": {
+        "0.1.0": "provideOnTypeCodeFormat"
+      }
+    },
+    "code-format.onSave": {
+      "versions": {
+        "0.1.0": "provideOnSaveCodeFormat"
+      }
+    },
+    "call-hierarchy": {
+      "versions": {
+        "0.1.0": "provideCallHierarchy"
+      }
+    },
+    "code-highlight": {
+      "versions": {
+        "0.1.0": "provideCodeHighlight"
+      }
+    },
+    "definitions": {
+      "versions": {
+        "0.1.0": "provideDefinitions"
+      }
+    },
+    "find-references": {
+      "versions": {
+        "0.1.0": "provideFindReferences"
+      }
+    },
+    "outline-view": {
+      "versions": {
+        "0.1.0": "provideOutlines"
+      }
+    },
+    "hover": {
+      "versions": {
+        "0.1.0": "provideHover"
+      }
+    },
+    "signature": {
+      "versions": {
+        "0.1.0": "provideSignature"
+      }
+    },
+    "refactor": {
+      "versions": {
+        "0.1.0": "provideRefactor",
+        "0.2.0": "provideRefactorWithPrepare"
+      }
+    }
+  }
+}
