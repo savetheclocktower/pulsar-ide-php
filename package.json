@@ -24,7 +24,7 @@
   "repository": "https://github.com/savetheclocktower/pulsar-ide-php",
   "license": "MIT",
   "engines": {
-    "atom": " >=1.131.0 <2.0.0"
+    "atom": ">=1.131.0 <2.0.0"
   },
   "dependencies": {
     "@savetheclocktower/atom-languageclient": "^1.18.0",
