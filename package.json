@@ -1,7 +1,7 @@
 {
   "name": "pulsar-ide-php",
   "main": "./lib/main",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "PHP language support for Pulsar using Intelephense",
   "keywords": [
     "intelephense",
