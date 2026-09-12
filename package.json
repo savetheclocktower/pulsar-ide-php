@@ -41,7 +41,8 @@
           "type": "string",
           "order": 1,
           "title": "License Key",
-          "description": "The license key to use to unlock premium Intelephense features. Can be omitted at the cost of a reduced feature set."
+          "description": "The license key to use to unlock premium Intelephense features. Can be omitted at the cost of a reduced feature set.",
+          "default": ""
         },
         "environment": {
           "type": "object",
